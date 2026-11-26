@@ -1,12 +1,12 @@
 import '@fontsource/pacifico/400.css';
-import '@fontsource/fredoka/400.css';
-import '@fontsource/fredoka/500.css';
-import '@fontsource/fredoka/600.css';
-import '@fontsource/fredoka/700.css';
+import '@fontsource/nunito/400.css';
+import '@fontsource/nunito/600.css';
+import '@fontsource/nunito/700.css';
+import '@fontsource/nunito/800.css';
 import './style.css';
 
 import { App } from '@capacitor/app';
-import { icons, kittySVG } from './art.js';
+import { icons, iconTile, mascotHTML } from './art.js';
 import { state, loadState, saveSettings } from './state.js';
 import { closeTopOverlay, openSheet, toast } from './ui.js';
 import { isNative, syncNotifications, onNotificationTap, requestPermission } from './notify.js';
@@ -74,18 +74,18 @@ tabbar.addEventListener('click', (e) => {
 
 function showWelcome() {
   const sheet = openSheet({
-    title: '¡Hola! 💗',
+    title: 'Bienvenido',
     cls: 'welcome',
     html: `
-      <div class="welcome-art">${kittySVG({ size: 130, wink: true })}</div>
-      <p class="welcome-text">Esta es tu app para cuidar y consentir a <span class="script">Luisa</span>.</p>
+      <div class="welcome-art">${mascotHTML({ size: 120 })}</div>
+      <p class="welcome-text">Tu app para cuidar y consentir a <span class="script">Luisa</span></p>
       <ul class="welcome-list">
-        <li>☀️ Todos los días a las <b>6:00 a. m.</b> te recordaré darle los buenos días.</li>
-        <li>💌 Te avisaré para escribirle algo bonito y darle las buenas noches.</li>
-        <li>📝 Guarda lo que le gusta, ideas de regalo y datos importantes.</li>
-        <li>📸 Guarda las fotos de sus momentos más lindos.</li>
+        <li>${iconTile('sun', 'sun', 'sm')}<span>Todos los días a las <b>6:00 a. m.</b> te recuerdo darle los buenos días.</span></li>
+        <li>${iconTile('chat', 'pink', 'sm')}<span>Te aviso para escribirle algo bonito y darle las buenas noches.</span></li>
+        <li>${iconTile('notes', 'lilac', 'sm')}<span>Guarda lo que le gusta, ideas de regalo y datos importantes.</span></li>
+        <li>${iconTile('camera', 'sky', 'sm')}<span>Guarda las fotos de sus momentos más lindos.</span></li>
       </ul>
-      <button class="btn block" data-ok>Activar notificaciones 🔔</button>`,
+      <button class="btn block" data-ok>${icons.bell} Activar notificaciones</button>`,
     onClose: async () => {
       state.settings.welcomed = true;
       await saveSettings();
@@ -94,9 +94,9 @@ function showWelcome() {
   sheet.body.querySelector('[data-ok]').addEventListener('click', async () => {
     const res = await requestPermission();
     sheet.close();
-    if (res === 'granted') toast('¡Listo! Mañana a las 6:00 te aviso ☀️');
-    else if (res === 'web') toast('Instala la app en tu celular para recibir avisos 📱');
-    else toast('Puedes activarlas luego en Recordatorios 🔔');
+    if (res === 'granted') toast('¡Listo! Mañana a las 6:00 te aviso');
+    else if (res === 'web') toast('Instala la app en tu celular para recibir avisos');
+    else toast('Puedes activarlas luego en Recordatorios');
   });
 }
 
@@ -105,7 +105,7 @@ async function start() {
     await loadState();
   } catch (e) {
     console.error(e);
-    toast('No se pudieron cargar tus datos 😿');
+    toast('No se pudieron cargar tus datos');
   }
   render();
   if (!state.settings.welcomed) setTimeout(showWelcome, 500);

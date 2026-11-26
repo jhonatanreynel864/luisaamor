@@ -64,10 +64,10 @@ function bodyFor(r) {
   if (r.kind === 'morning') return `Escríbele: «${pickMessage('morning')}»`;
   if (r.kind === 'night') return `Escríbele: «${pickMessage('night')}»`;
   if (r.kind === 'sweet') return `Idea: «${pickMessage('sweet')}»`;
-  if (r.kind === 'birthday') return '¡Felicítala con todo tu amor! 🎂💕';
-  if (r.kind === 'birthday-eve') return 'Prepara su regalo y una sorpresa bonita 🎁';
-  if (r.kind === 'anniversary') return 'Celebra su historia de amor 💞';
-  return 'Toca para abrir tu app de Luisa 💗';
+  if (r.kind === 'birthday') return 'Felicítala con todo tu amor.';
+  if (r.kind === 'birthday-eve') return 'Prepara su regalo y una sorpresa bonita.';
+  if (r.kind === 'anniversary') return 'Celebra su historia de amor.';
+  return 'Toca para abrir la app de Luisa.';
 }
 
 export function buildSchedule(r, now = new Date()) {
@@ -148,7 +148,7 @@ export async function sendTestNotification() {
     notifications: [
       {
         id: TEST_ID,
-        title: '💗 ¡Así te llegarán los recordatorios!',
+        title: 'Así te llegarán los recordatorios',
         body,
         largeBody: body,
         schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true },
@@ -194,10 +194,10 @@ export async function syncSpecialDates() {
     const d = parseISODate(birthday);
     const eve = new Date(d);
     eve.setDate(eve.getDate() - 1);
-    upsertBuiltin('birthday', { kind: 'birthday', title: '🎂 ¡Hoy es el cumpleaños de Luisa!', date: birthday, time: '07:00' });
+    upsertBuiltin('birthday', { kind: 'birthday', title: 'Hoy es el cumpleaños de Luisa', date: birthday, time: '07:00' });
     upsertBuiltin('birthday-eve', {
       kind: 'birthday-eve',
-      title: '🎁 Mañana es el cumpleaños de Luisa',
+      title: 'Mañana es el cumpleaños de Luisa',
       date: toISODate(eve),
       time: '18:00',
     });
@@ -206,7 +206,7 @@ export async function syncSpecialDates() {
     upsertBuiltin('birthday-eve', null);
   }
   if (anniversary) {
-    upsertBuiltin('anniversary', { kind: 'anniversary', title: '💞 ¡Hoy es su aniversario!', date: anniversary, time: '07:00' });
+    upsertBuiltin('anniversary', { kind: 'anniversary', title: 'Hoy es su aniversario', date: anniversary, time: '07:00' });
   } else {
     upsertBuiltin('anniversary', null);
   }

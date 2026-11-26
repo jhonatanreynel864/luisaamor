@@ -1,4 +1,4 @@
-import { icons } from './art.js';
+import { icons, iconTile, heartSVG, sparkleSVG } from './art.js';
 
 export function esc(s = '') {
   return String(s)
@@ -44,7 +44,7 @@ export function openSheet({ title = '', html = '', onClose, cls = '' } = {}) {
       <div class="sheet-handle"></div>
       <header class="sheet-head">
         <h3>${title}</h3>
-        <button class="round-btn ghost" data-close aria-label="Cerrar">${icons.close}</button>
+        <button class="icon-btn plain" data-close aria-label="Cerrar">${icons.close}</button>
       </header>
       <div class="sheet-body">${html}</div>
     </section>`;
@@ -100,11 +100,11 @@ export function confirmDialog({ title = '¿Seguro?', text = '', ok = 'Sí', canc
     wrap.innerHTML = `
       <div class="dialog-backdrop"></div>
       <div class="dialog" role="alertdialog" aria-modal="true">
-        <div class="dialog-emoji">${danger ? '🥺' : '💗'}</div>
+        ${danger ? iconTile('trash', 'pink', 'lg') : iconTile('heart', 'pink', 'lg')}
         <h3>${esc(title)}</h3>
         ${text ? `<p>${esc(text)}</p>` : ''}
         <div class="dialog-actions">
-          <button class="btn soft" data-no>${esc(cancel)}</button>
+          <button class="btn secondary" data-no>${esc(cancel)}</button>
           <button class="btn ${danger ? 'danger' : ''}" data-yes>${esc(ok)}</button>
         </div>
       </div>`;
@@ -146,11 +146,11 @@ export function toast(msg) {
 
 /** Lluvia de corazoncitos para celebrar. */
 export function heartBurst(x = window.innerWidth / 2, y = window.innerHeight / 2) {
-  const glyphs = ['💗', '💕', '💖', '🌸', '✨', '💞'];
+  const colors = ['#F0508E', '#FF8FBB', '#A07CF0', '#FFC2DA'];
   for (let i = 0; i < 14; i++) {
     const s = document.createElement('span');
     s.className = 'burst';
-    s.textContent = glyphs[i % glyphs.length];
+    s.innerHTML = i % 3 === 0 ? sparkleSVG({ size: 16, color: '#FFC94D' }) : heartSVG({ size: 16 + (i % 3) * 3, color: colors[i % colors.length] });
     const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.4;
     const dist = 70 + Math.random() * 70;
     s.style.left = `${x}px`;

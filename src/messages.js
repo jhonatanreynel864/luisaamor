@@ -41,9 +41,9 @@ export const MESSAGES = {
 };
 
 export const KIND_LABEL = {
-  morning: 'Buenos días ☀️',
-  sweet: 'Algo bonito 💌',
-  night: 'Buenas noches 🌙',
+  morning: 'Buenos días',
+  sweet: 'Durante el día',
+  night: 'Buenas noches',
 };
 
 export function pickMessage(kind = 'sweet', avoid) {

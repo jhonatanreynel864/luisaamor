@@ -1,4 +1,4 @@
-import { icons, kittySVG } from '../art.js';
+import { icons, iconTile, kittySVG, mascotHTML } from '../art.js';
 import { state, putPhoto, deletePhoto, getAllPhotos, uid } from '../state.js';
 import { esc, openSheet, openOverlay, confirmDialog, toast, heartBurst } from '../ui.js';
 import { processPhoto, photoURL, forgetPhotoURLs, sharePhoto } from '../media.js';
@@ -8,18 +8,20 @@ function gridHTML() {
   if (!state.photos.length) {
     return `
       <div class="empty">
-        ${kittySVG({ size: 110, wink: true })}
-        <p>Aquí vivirán sus momentos más lindos.<br>¡Agrega la primera foto! 📸</p>
+        ${kittySVG({ size: 104, wink: true, paws: false })}
+        <b>Sus momentos más lindos</b>
+        Toca el botón + para guardar la primera foto.
       </div>`;
   }
   return `<div class="photo-grid">${state.photos
     .map(
       (p, i) => `
-      <button class="polaroid tilt-${i % 4}" data-act="view" data-i="${i}">
-        <i class="tape"></i>
-        <img src="${photoURL(p)}" alt="${esc(p.caption || 'Foto')}" loading="lazy" />
-        <span class="cap">${esc(p.caption || ' ')}</span>
-        <span class="pdate">${p.date ? fmtDate(p.date) : ''}</span>
+      <button class="photo" data-act="view" data-i="${i}">
+        <img src="${photoURL(p)}" alt="${esc(p.caption || 'Foto')}" loading="lazy" ${p.w && p.h ? `style="aspect-ratio:${p.w}/${p.h}"` : ''} />
+        <span class="photo-info">
+          ${p.caption ? `<b>${esc(p.caption)}</b>` : ''}
+          <span>${p.date ? fmtDate(p.date) : ''}</span>
+        </span>
       </button>`,
     )
     .join('')}</div>`;
@@ -28,15 +30,14 @@ function gridHTML() {
 export function renderPhotos(view, ctx) {
   view.innerHTML = `
     <header class="page-head">
-      <div class="dots"></div>
       <div>
         <p class="page-kicker">Momentos lindos con</p>
-        <h2 class="page-title"><span class="script">Luisa</span> 📸</h2>
+        <h2 class="page-title"><span class="script">Luisa</span></h2>
       </div>
-      <div class="page-kitty">${kittySVG({ size: 84 })}</div>
+      <div class="page-mascot">${mascotHTML({ size: 84 })}</div>
     </header>
     <div class="page-body">
-      <p class="count-pill">${state.photos.length} ${state.photos.length === 1 ? 'recuerdo guardado' : 'recuerdos guardados'} 💕</p>
+      ${state.photos.length ? `<div class="photos-meta"><span>${state.photos.length} ${state.photos.length === 1 ? 'recuerdo' : 'recuerdos'}</span></div>` : ''}
       <div id="grid">${gridHTML()}</div>
     </div>
     <button class="fab" data-act="add" aria-label="Agregar foto">${icons.plus}</button>
@@ -52,7 +53,7 @@ export function renderPhotos(view, ctx) {
     input.value = '';
     if (!files.length) return;
     if (files.length === 1) return captionNewPhoto(files[0], rerender);
-    toast(`Guardando ${files.length} fotos… 💗`);
+    toast(`Guardando ${files.length} fotos…`);
     let ok = 0;
     for (const f of files) {
       try {
@@ -70,7 +71,7 @@ export function renderPhotos(view, ctx) {
       }
     }
     state.photos = await getAllPhotos();
-    toast(`${ok} fotos guardadas 💕`);
+    toast(`${ok} fotos guardadas`);
     rerender();
   };
   cam.addEventListener('change', () => onFiles(cam));
@@ -81,11 +82,11 @@ export function renderPhotos(view, ctx) {
     if (!el) return;
     if (el.dataset.act === 'add') {
       const s = openSheet({
-        title: 'Agregar un recuerdo 📸',
+        title: 'Agregar un recuerdo',
         html: `
           <div class="pick-grid">
-            <button class="pick" data-pick="cam"><span>📷</span>Tomar foto</button>
-            <button class="pick" data-pick="gal"><span>🖼️</span>Elegir de la galería</button>
+            <button class="pick" data-pick="cam">${iconTile('camera', 'pink', 'lg')}Tomar foto</button>
+            <button class="pick" data-pick="gal">${iconTile('image', 'lilac', 'lg')}Galería</button>
           </div>`,
       });
       s.body.querySelector('[data-pick=cam]').onclick = () => {
@@ -107,24 +108,24 @@ async function captionNewPhoto(file, onSaved) {
   try {
     processed = await processPhoto(file);
   } catch {
-    toast('No se pudo abrir esa imagen 😿');
+    toast('No se pudo abrir esa imagen');
     return;
   }
   const preview = URL.createObjectURL(processed.thumb);
   const sheet = openSheet({
-    title: 'Nuevo recuerdo 💕',
+    title: 'Nuevo recuerdo',
     onClose: () => setTimeout(() => URL.revokeObjectURL(preview), 400),
     html: `
-      <div class="preview-polaroid"><img src="${preview}" alt="" /></div>
+      <div class="preview-photo"><img src="${preview}" alt="" /></div>
       <label class="field">
         <span>¿Qué momento fue?</span>
-        <input name="caption" maxlength="90" placeholder="Ej: Nuestra primera cita 🌸" />
+        <input name="caption" maxlength="90" placeholder="Ej: Nuestra primera cita" />
       </label>
       <label class="field">
         <span>Fecha</span>
         <input type="date" name="date" value="${toISODate(new Date(file.lastModified || Date.now()))}" max="${todayISO()}" />
       </label>
-      <div class="sheet-actions"><button class="btn grow" data-save>Guardar recuerdo 💗</button></div>`,
+      <div class="sheet-actions"><button class="btn grow" data-save>Guardar recuerdo</button></div>`,
   });
   sheet.body.querySelector('[data-save]').addEventListener('click', async (e) => {
     const photo = {
@@ -137,14 +138,14 @@ async function captionNewPhoto(file, onSaved) {
     try {
       await putPhoto(photo);
     } catch {
-      toast('No hay espacio para guardar la foto 😿');
+      toast('No hay espacio para guardar la foto');
       return;
     }
     state.photos = await getAllPhotos();
     const r = e.target.getBoundingClientRect();
     heartBurst(r.left + r.width / 2, r.top);
     sheet.close();
-    toast('Recuerdo guardado 💕');
+    toast('Recuerdo guardado');
     onSaved();
   });
 }
@@ -155,7 +156,7 @@ function openViewer(index, onChange) {
     cls: 'viewer',
     html: `
       <div class="viewer-top">
-        <button class="round-btn glass" data-v="close" aria-label="Cerrar">${icons.close}</button>
+        <button class="icon-btn glass" data-v="close" aria-label="Cerrar">${icons.close}</button>
         <span class="viewer-count"></span>
         <span style="width:44px"></span>
       </div>
@@ -168,9 +169,9 @@ function openViewer(index, onChange) {
         <b class="viewer-cap"></b>
         <span class="viewer-date"></span>
         <div class="viewer-actions">
-          <button class="btn soft small" data-v="share">${icons.share} Compartir</button>
-          <button class="btn soft small" data-v="edit">${icons.edit} Editar</button>
-          <button class="btn soft small danger-text" data-v="del">${icons.trash} Borrar</button>
+          <button class="btn secondary small" data-v="share">${icons.share} Compartir</button>
+          <button class="btn secondary small" data-v="edit">${icons.edit} Editar</button>
+          <button class="btn danger-soft small" data-v="del">${icons.trash} Borrar</button>
         </div>
       </div>`,
   });
@@ -179,7 +180,7 @@ function openViewer(index, onChange) {
     const p = state.photos[i];
     if (!p) return ov.close();
     el.querySelector('.viewer-img').src = photoURL(p, 'full');
-    el.querySelector('.viewer-cap').textContent = p.caption || 'Nuestro momento 💕';
+    el.querySelector('.viewer-cap').textContent = p.caption || 'Nuestro momento';
     el.querySelector('.viewer-date').textContent = p.date ? fmtDate(p.date) : '';
     el.querySelector('.viewer-count').textContent = `${i + 1} / ${state.photos.length}`;
     el.querySelector('.prev').style.visibility = i > 0 ? 'visible' : 'hidden';
@@ -210,7 +211,7 @@ function openViewer(index, onChange) {
       try {
         await sharePhoto(p);
       } catch (err) {
-        if (!String(err?.message || err).toLowerCase().includes('cancel')) toast('No se pudo compartir 😿');
+        if (!String(err?.message || err).toLowerCase().includes('cancel')) toast('No se pudo compartir');
       }
     } else if (v === 'edit') {
       const s = openSheet({
@@ -218,7 +219,7 @@ function openViewer(index, onChange) {
         html: `
           <label class="field"><span>Descripción</span><input name="caption" maxlength="90" value="${esc(p.caption || '')}" /></label>
           <label class="field"><span>Fecha</span><input type="date" name="date" value="${p.date || todayISO()}" /></label>
-          <div class="sheet-actions"><button class="btn grow" data-save>Guardar 💗</button></div>`,
+          <div class="sheet-actions"><button class="btn grow" data-save>Guardar</button></div>`,
       });
       s.body.querySelector('[data-save]').onclick = async () => {
         p.caption = s.body.querySelector('[name=caption]').value.trim();
@@ -229,7 +230,7 @@ function openViewer(index, onChange) {
         s.close();
         show();
         onChange();
-        toast('Recuerdo actualizado 💕');
+        toast('Recuerdo actualizado');
       };
     } else if (v === 'del') {
       if (!(await confirmDialog({ title: '¿Borrar esta foto?', text: 'Se borrará de la app para siempre.', ok: 'Borrar', danger: true }))) return;

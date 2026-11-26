@@ -110,7 +110,7 @@ export async function copyText(text) {
 export async function shareText(text) {
   try {
     if (isNative || navigator.share) {
-      await Share.share({ text, dialogTitle: 'Enviar a Luisa 💗' });
+      await Share.share({ text, dialogTitle: 'Enviar a Luisa' });
       return true;
     }
   } catch (e) {
@@ -131,7 +131,7 @@ export async function sharePhoto(photo) {
   if (isNative) {
     const data = await blobToBase64(photo.blob);
     const res = await Filesystem.writeFile({ path: name, data, directory: Directory.Cache });
-    await Share.share({ files: [res.uri], text: photo.caption || '', dialogTitle: 'Compartir recuerdo 💗' });
+    await Share.share({ files: [res.uri], text: photo.caption || '', dialogTitle: 'Compartir recuerdo' });
     return;
   }
   const file = new File([photo.blob], name, { type: 'image/jpeg' });

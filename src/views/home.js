@@ -1,10 +1,11 @@
-import { kittySVG, icons, bowSVG } from '../art.js';
+import { mascotHTML, icons, iconTile, bowSVG } from '../art.js';
 import { state, saveSettings } from '../state.js';
 import { pickMessage, KIND_LABEL } from '../messages.js';
-import { todayISO, daysBetween, parseISODate, toISODate, nextOccurrence, relativeWhen, partOfDay } from '../dates.js';
+import { todayISO, daysBetween, parseISODate, toISODate, nextOccurrence, relativeWhen, partOfDay, fmtDate } from '../dates.js';
 import { esc, toast, heartBurst } from '../ui.js';
 import { copyText, openWhatsApp, shareText, photoURL } from '../media.js';
 import { CATS } from './notes.js';
+import { reminderIcon } from './reminders.js';
 
 let msgKind = null;
 let msgText = '';
@@ -24,9 +25,9 @@ function defaultKind() {
 
 function greeting() {
   const p = partOfDay();
-  if (p === 'morning') return 'Buenos días ☀️';
-  if (p === 'afternoon') return 'Buenas tardes 🌷';
-  return 'Buenas noches 🌙';
+  if (p === 'morning') return 'Buenos días';
+  if (p === 'afternoon') return 'Buenas tardes';
+  return 'Buenas noches';
 }
 
 function streak() {
@@ -41,7 +42,7 @@ function streak() {
   return n;
 }
 
-function togetherText() {
+function together() {
   const a = state.settings.anniversary;
   if (!a) return null;
   const days = daysBetween(a);
@@ -58,6 +59,8 @@ function togetherText() {
   return { days, extra: parts.join(' y ') };
 }
 
+const todayLabel = () => new Intl.DateTimeFormat('es', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+
 export function renderHome(view, ctx) {
   if (!msgKind) {
     msgKind = defaultKind();
@@ -66,7 +69,7 @@ export function renderHome(view, ctx) {
   const today = todayISO();
   const doneToday = (state.settings.gmLog || []).includes(today);
   const s = streak();
-  const t = togetherText();
+  const t = together();
 
   const upcoming = state.reminders
     .filter((r) => r.enabled)
@@ -75,7 +78,8 @@ export function renderHome(view, ctx) {
     .sort((a, b) => a.at - b.at)
     .slice(0, 3);
 
-  const pinned = state.notes.filter((n) => n.pinned || n.cat === 'datos').slice(0, 3);
+  const pinned = state.notes.filter((n) => n.pinned).slice(0, 3);
+
   let photo = state.photos.find((p) => p.id === memoryId);
   if (!photo && state.photos.length) {
     photo = state.photos[Math.floor(Math.random() * state.photos.length)];
@@ -84,103 +88,108 @@ export function renderHome(view, ctx) {
 
   view.innerHTML = `
     <section class="hero">
-      <div class="dots"></div>
       <div class="hero-top">
-        <span class="hero-hello">${greeting()}</span>
-        <button class="round-btn glass" data-act="settings" aria-label="Ajustes">${icons.gear}</button>
-      </div>
-      <div class="hero-kitty">${kittySVG({ size: 140, wink: true })}</div>
-      <h1 class="luisa"><span class="luisa-word"><span class="luisa-bow">${bowSVG({ size: 46 })}</span>Luisa</span></h1>
-      <p class="hero-sub">el amor de mi vida</p>
-      ${
-        t
-          ? `<button class="together" data-act="settings"><b>${t.days.toLocaleString('es')}</b> días juntos 💞${t.extra ? `<small>${t.extra}</small>` : ''}</button>`
-          : `<button class="together empty" data-act="settings">💞 Agrega la fecha en que empezaron</button>`
-      }
-      <span class="fh fh1">💗</span><span class="fh fh2">💕</span><span class="fh fh3">✨</span><span class="fh fh4">🌸</span><span class="fh fh5">💖</span>
-    </section>
-
-    <section class="card gm-card ${doneToday ? 'done' : ''}">
-      <div class="gm-row">
-        <div class="gm-icon">${doneToday ? '💖' : '☀️'}</div>
-        <div class="gm-text">
-          <h3>${doneToday ? '¡Ya le diste los buenos días!' : '¿Ya le diste los buenos días a Luisa?'}</h3>
-          <p>${s > 1 ? `🔥 Racha de <b>${s}</b> días seguidos` : s === 1 ? '🔥 ¡Primer día de tu racha!' : 'Empieza tu racha de buenos días 🔥'}</p>
+        <div>
+          <p class="hero-hello">${greeting()}</p>
+          <p class="hero-date">${todayLabel()}</p>
         </div>
+        <button class="icon-btn glass" data-act="settings" aria-label="Ajustes">${icons.gear}</button>
       </div>
-      ${
-        doneToday
-          ? `<button class="btn soft small" data-act="gm-undo">Deshacer</button>`
-          : `<button class="btn block" data-act="gm-done">¡Sí, ya le escribí! 💌</button>`
-      }
-    </section>
-
-    <section class="card msg-card" id="msg-card">
-      <div class="card-title"><h3>💌 Mensajito para Luisa</h3></div>
-      <div class="chips" role="tablist">
-        ${['morning', 'sweet', 'night']
-          .map((k) => `<button class="chip ${k === msgKind ? 'on' : ''}" data-act="kind" data-kind="${k}">${KIND_LABEL[k]}</button>`)
-          .join('')}
-      </div>
-      <blockquote class="msg-text">${esc(msgText)}</blockquote>
-      <div class="msg-actions">
-        <button class="btn wa" data-act="wa">${icons.whatsapp} WhatsApp</button>
-        <button class="round-btn" data-act="copy" aria-label="Copiar">${icons.copy}</button>
-        <button class="round-btn" data-act="share" aria-label="Compartir">${icons.share}</button>
-        <button class="round-btn" data-act="another" aria-label="Otro mensaje">${icons.refresh}</button>
+      ${mascotHTML({ size: 132 })}
+      <h1 class="luisa"><span class="luisa-word"><span class="luisa-bow">${bowSVG({ size: 42 })}</span>Luisa</span></h1>
+      <p class="hero-sub">el amor de mi vida</p>
+      <div class="hero-stats">
+        ${
+          t
+            ? `<button class="stat" data-act="settings"><b>${t.days.toLocaleString('es')}</b><span>días juntos</span>${t.extra ? `<small>${t.extra}</small>` : ''}</button>`
+            : `<button class="stat add" data-act="settings"><b>Agregar fecha</b><span>desde cuándo están juntos</span></button>`
+        }
+        <div class="stat"><b>${s}</b><span>${s === 1 ? 'día seguido' : 'días seguidos'}</span><small>dándole los buenos días</small></div>
       </div>
     </section>
 
     <section class="card">
-      <div class="card-title"><h3>⏰ Próximos recordatorios</h3><button class="link" data-act="go" data-tab="reminders">Ver todos</button></div>
+      <div class="gm">
+        ${iconTile(doneToday ? 'check' : 'sun', doneToday ? 'mint' : 'sun', 'lg')}
+        <div class="gm-text">
+          <h3>${doneToday ? 'Ya le diste los buenos días' : 'Buenos días para Luisa'}</h3>
+          <p>${doneToday ? '¡Bien hecho! Mañana a las 6:00 te recuerdo otra vez.' : '¿Ya le escribiste hoy? Márcalo para seguir tu racha.'}</p>
+        </div>
+      </div>
+      ${
+        doneToday
+          ? `<div class="gm-done"><span>${icons.check} Enviado hoy</span><button data-act="gm-undo">Deshacer</button></div>`
+          : `<div class="gm-actions"><button class="btn block" data-act="gm-done">${icons.check} Ya le escribí</button></div>`
+      }
+    </section>
+
+    <section class="card" id="msg-card">
+      <div class="card-head"><h3>Mensaje para Luisa</h3><button class="link" data-act="another" aria-label="Otro mensaje">${icons.refresh}</button></div>
+      <div class="seg" role="tablist">
+        ${['morning', 'sweet', 'night']
+          .map((k) => `<button class="${k === msgKind ? 'on' : ''}" data-act="kind" data-kind="${k}">${KIND_LABEL[k]}</button>`)
+          .join('')}
+      </div>
+      <p class="bubble">${esc(msgText)}</p>
+      <div class="msg-actions">
+        <button class="btn wa" data-act="wa">${icons.whatsapp} Enviar por WhatsApp</button>
+        <button class="icon-btn" data-act="copy" aria-label="Copiar">${icons.copy}</button>
+        <button class="icon-btn" data-act="share" aria-label="Compartir">${icons.share}</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h3>Próximos recordatorios</h3><button class="link" data-act="go" data-tab="reminders">Ver todos</button></div>
       ${
         upcoming.length
-          ? `<ul class="next-list">${upcoming
+          ? `<div class="list">${upcoming
               .map(
                 ({ r, at }) => `
-            <li>
-              <span class="next-when">${relativeWhen(at)}</span>
-              <span class="next-title">${esc(r.title)}</span>
-            </li>`,
+            <button class="row" data-act="go" data-tab="reminders">
+              ${reminderIcon(r, 'sm')}
+              <span class="row-main"><b>${esc(r.title)}</b><span class="when">${relativeWhen(at)}</span></span>
+            </button>`,
               )
-              .join('')}</ul>`
+              .join('')}</div>`
           : `<p class="muted">No hay recordatorios activos.</p>`
       }
     </section>
 
     <section class="card">
-      <div class="card-title"><h3>⭐ Lo que no debo olvidar</h3><button class="link" data-act="go" data-tab="notes">Mis notas</button></div>
+      <div class="card-head"><h3>Lo que no debo olvidar</h3><button class="link" data-act="go" data-tab="notes">Notas</button></div>
       ${
         pinned.length
-          ? `<div class="mini-notes">${pinned
-              .map(
-                (n) => `
-            <button class="mini-note cat-${n.cat}" data-act="open-note" data-id="${n.id}">
-              <span class="mini-note-cat">${CATS[n.cat]?.emoji || '📝'}</span>
-              <b>${esc(n.title || 'Sin título')}</b>
-              <span>${esc((n.body || '').slice(0, 90))}</span>
-            </button>`,
-              )
+          ? `<div class="list">${pinned
+              .map((n) => {
+                const c = CATS[n.cat] || CATS.otros;
+                return `
+            <button class="row" data-act="open-note" data-id="${n.id}">
+              ${iconTile(c.icon, c.tone, 'sm')}
+              <span class="row-main"><b>${esc(n.title || 'Sin título')}</b><span>${esc((n.body || '').replace(/\n/g, ' · ').slice(0, 80))}</span></span>
+              <span class="chev">${icons.chevron}</span>
+            </button>`;
+              })
               .join('')}</div>`
-          : `<p class="muted">Fija notas importantes con 📌 y aparecerán aquí.</p>`
+          : `<p class="muted">Fija tus notas importantes y aparecerán aquí.</p>`
       }
     </section>
 
-    <section class="card memory">
-      <div class="card-title"><h3>📸 Un recuerdo bonito</h3><button class="link" data-act="go" data-tab="photos">Ver fotos</button></div>
+    <section class="card">
+      <div class="card-head"><h3>Un recuerdo bonito</h3><button class="link" data-act="go" data-tab="photos">Fotos</button></div>
       ${
         photo
-          ? `<button class="polaroid big" data-act="go" data-tab="photos">
+          ? `<button class="memory-photo" data-act="go" data-tab="photos">
                <img src="${photoURL(photo)}" alt="">
-               <span>${esc(photo.caption || 'Nuestro momento 💕')}</span>
+               <figcaption>${esc(photo.caption || 'Nuestro momento')}${photo.date ? `<small>${fmtDate(photo.date)}</small>` : ''}</figcaption>
              </button>`
           : `<button class="empty-photo" data-act="go" data-tab="photos">
-               <span>📷</span>Guarda tu primera foto con Luisa
+               ${iconTile('camera', 'lilac', 'md')}
+               <span>Guarda tu primera foto con Luisa</span>
              </button>`
       }
     </section>
 
-    <p class="footer-love">Hecho con mucho amor para Luisa ${'💗'}</p>
+    <p class="footer-love">Hecha con amor para Luisa</p>
   `;
 
   view.onclick = async (e) => {
@@ -193,16 +202,13 @@ export function renderHome(view, ctx) {
     else if (act === 'kind') {
       msgKind = el.dataset.kind;
       msgText = pickMessage(msgKind);
-      renderHome(view, ctx);
+      view.querySelectorAll('[data-act="kind"]').forEach((b) => b.classList.toggle('on', b === el));
+      swapMessage(view);
     } else if (act === 'another') {
       msgText = pickMessage(msgKind, msgText);
-      const q = view.querySelector('.msg-text');
-      q.classList.remove('pop');
-      void q.offsetWidth;
-      q.textContent = msgText;
-      q.classList.add('pop');
+      swapMessage(view);
     } else if (act === 'copy') {
-      (await copyText(msgText)) ? toast('Mensaje copiado 💗') : toast('No se pudo copiar');
+      toast((await copyText(msgText)) ? 'Mensaje copiado' : 'No se pudo copiar');
     } else if (act === 'share') {
       await shareText(msgText);
     } else if (act === 'wa') {
@@ -214,7 +220,7 @@ export function renderHome(view, ctx) {
       await saveSettings();
       const r = el.getBoundingClientRect();
       heartBurst(r.left + r.width / 2, r.top + r.height / 2);
-      toast('¡Eres un amor! 💖');
+      toast('¡Eres un amor!');
       renderHome(view, ctx);
     } else if (act === 'gm-undo') {
       state.settings.gmLog = (state.settings.gmLog || []).filter((d) => d !== today);
@@ -222,6 +228,14 @@ export function renderHome(view, ctx) {
       renderHome(view, ctx);
     }
   };
+}
+
+function swapMessage(view) {
+  const q = view.querySelector('.bubble');
+  q.classList.remove('pop');
+  void q.offsetWidth;
+  q.textContent = msgText;
+  q.classList.add('pop');
 }
 
 export function highlightMessageCard() {

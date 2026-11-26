@@ -93,7 +93,7 @@ export function defaultReminders() {
       id: 600,
       builtin: 'morning',
       kind: 'morning',
-      title: '☀️ ¡Dale los buenos días a Luisa!',
+      title: 'Dale los buenos días a Luisa',
       body: '',
       time: '06:00',
       freq: 'daily',
@@ -102,7 +102,7 @@ export function defaultReminders() {
     {
       id: 1300,
       kind: 'sweet',
-      title: '💌 Escríbele algo bonito a Luisa',
+      title: 'Escríbele algo bonito a Luisa',
       body: '',
       time: '13:00',
       freq: 'daily',
@@ -111,7 +111,7 @@ export function defaultReminders() {
     {
       id: 2130,
       kind: 'night',
-      title: '🌙 Dale las buenas noches a Luisa',
+      title: 'Dale las buenas noches a Luisa',
       body: '',
       time: '21:30',
       freq: 'daily',
@@ -125,9 +125,9 @@ function defaultNotes() {
   return [
     {
       id: uid(),
-      title: 'Todo sobre Luisa 💕',
+      title: 'Todo sobre Luisa',
       body:
-        '🎂 Cumpleaños: \n🌸 Flor favorita: \n🍓 Comida favorita: \n🍰 Postre favorito: \n🎨 Color favorito: \n🎵 Canción favorita: \n🎬 Película favorita: \n👗 Talla de ropa: \n👟 Talla de zapatos: \n💍 Talla de anillo: ',
+        'Cumpleaños: \nFlor favorita: \nComida favorita: \nPostre favorito: \nColor favorito: \nCanción favorita: \nPelícula favorita: \nTalla de ropa: \nTalla de zapatos: \nTalla de anillo: ',
       cat: 'datos',
       pinned: true,
       created: now,

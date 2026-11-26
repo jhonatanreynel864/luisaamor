@@ -3,7 +3,7 @@
   "appName": "Luisa",
   "webDir": "dist",
   "android": {
-    "backgroundColor": "#FFE9F2"
+    "backgroundColor": "#FFF6FA"
   },
   "plugins": {
     "LocalNotifications": {

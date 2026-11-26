@@ -1,4 +1,4 @@
-import { icons, kittySVG } from '../art.js';
+import { icons, iconTile, mascotHTML } from '../art.js';
 import { state, saveReminders, notifId } from '../state.js';
 import { esc, openSheet, confirmDialog, toast, autoGrow } from '../ui.js';
 import { describeSchedule, fmtTime, todayISO, WEEKDAYS, WEEKDAYS_SHORT } from '../dates.js';
@@ -20,24 +20,39 @@ const FREQS = [
 ];
 
 const TEMPLATES = [
-  { emoji: '💌', title: 'Escríbele algo bonito a Luisa', kind: 'sweet' },
-  { emoji: '📞', title: 'Llama a Luisa', kind: 'custom' },
-  { emoji: '🌹', title: 'Dale un detalle a Luisa', kind: 'custom' },
-  { emoji: '🍿', title: 'Planea una cita con Luisa', kind: 'custom' },
-  { emoji: '🎁', title: 'Compra el regalo de Luisa', kind: 'custom' },
+  { icon: 'chat', label: 'Escribirle', title: 'Escríbele algo bonito a Luisa', kind: 'sweet' },
+  { icon: 'phone', label: 'Llamarla', title: 'Llama a Luisa', kind: 'custom' },
+  { icon: 'flower', label: 'Un detalle', title: 'Dale un detalle a Luisa', kind: 'custom' },
+  { icon: 'calendar', label: 'Una cita', title: 'Planea una cita con Luisa', kind: 'custom' },
+  { icon: 'gift', label: 'Un regalo', title: 'Compra el regalo de Luisa', kind: 'custom' },
 ];
 
+const KIND_ICON = {
+  morning: ['sun', 'sun'],
+  sweet: ['chat', 'pink'],
+  night: ['moon', 'night'],
+  birthday: ['cake', 'peach'],
+  'birthday-eve': ['gift', 'mint'],
+  anniversary: ['heart', 'pink'],
+  custom: ['bell', 'lilac'],
+};
+
+export function reminderIcon(r, size = 'md') {
+  const [icon, tone] = r.icon ? [r.icon, r.tone || 'lilac'] : KIND_ICON[r.kind] || KIND_ICON.custom;
+  return iconTile(icon, tone, size);
+}
+
 const BUILTIN_NOTE = {
-  birthday: 'Este recordatorio sale de su cumpleaños (en Ajustes ⚙️).',
-  'birthday-eve': 'Este recordatorio sale de su cumpleaños (en Ajustes ⚙️).',
-  anniversary: 'Este recordatorio sale de su aniversario (en Ajustes ⚙️).',
+  birthday: 'Este recordatorio viene de su cumpleaños (en Ajustes).',
+  'birthday-eve': 'Este recordatorio viene de su cumpleaños (en Ajustes).',
+  anniversary: 'Este recordatorio viene de su aniversario (en Ajustes).',
 };
 
 function itemHTML(r) {
   return `
     <div class="rem ${r.enabled ? '' : 'off'}" data-act="edit" data-id="${r.id}">
-      <div class="rem-time">${fmtTime(r.time).replace(' ', '<small>')}</small></div>
-      <div class="rem-info">
+      ${reminderIcon(r)}
+      <div class="row-main">
         <b>${esc(r.title)}</b>
         <span>${esc(describeSchedule(r))}</span>
       </div>
@@ -48,15 +63,15 @@ function itemHTML(r) {
 export function renderReminders(view, ctx) {
   const morning = state.reminders.find((r) => r.builtin === 'morning');
   const others = state.reminders.filter((r) => r !== morning).sort((a, b) => a.time.localeCompare(b.time));
+  const [mTime, mAmPm] = morning ? [fmtTime(morning.time).split(' ')[0], fmtTime(morning.time).split(' ').slice(1).join(' ')] : [];
 
   view.innerHTML = `
     <header class="page-head">
-      <div class="dots"></div>
       <div>
         <p class="page-kicker">Para no olvidar a</p>
-        <h2 class="page-title"><span class="script">Luisa</span> ⏰</h2>
+        <h2 class="page-title"><span class="script">Luisa</span></h2>
       </div>
-      <div class="page-kitty">${kittySVG({ size: 84, wink: true })}</div>
+      <div class="page-mascot">${mascotHTML({ size: 84 })}</div>
     </header>
     <div class="page-body">
       <div id="perm-banner"></div>
@@ -64,12 +79,11 @@ export function renderReminders(view, ctx) {
       ${
         morning
           ? `
-      <div class="sunrise ${morning.enabled ? '' : 'off'}" data-act="edit" data-id="${morning.id}">
-        <div class="sun"></div>
-        <div class="sunrise-text">
-          <span class="sunrise-label">Buenos días para Luisa</span>
-          <span class="sunrise-time">${fmtTime(morning.time)}</span>
-          <span class="sunrise-desc">Todos los días te recordaré darle los buenos días ☀️</span>
+      <div class="alarm ${morning.enabled ? '' : 'off'}" data-act="edit" data-id="${morning.id}">
+        <div class="alarm-text">
+          <span class="alarm-label">${icons.sun} Buenos días para Luisa</span>
+          <span class="alarm-time">${mTime}<small>${mAmPm}</small></span>
+          <span class="alarm-desc">Todos los días te recuerdo darle los buenos días</span>
         </div>
         <input type="checkbox" class="switch" data-act="toggle" data-id="${morning.id}" ${morning.enabled ? 'checked' : ''} aria-label="Activar" />
       </div>`
@@ -77,12 +91,17 @@ export function renderReminders(view, ctx) {
       }
 
       <h3 class="section-label">Mis recordatorios</h3>
-      <div class="rem-list">
-        ${others.length ? others.map(itemHTML).join('') : '<p class="muted center">Toca el ➕ para crear uno nuevo.</p>'}
-      </div>
+      ${
+        others.length
+          ? `<div class="card rem-card">${others.map(itemHTML).join('')}</div>`
+          : '<p class="muted center">Toca el botón + para crear uno nuevo.</p>'
+      }
 
-      <button class="btn soft block" data-act="test">🔔 Probar una notificación</button>
-      <p class="hint">Consejo: si en tu celular no llegan los avisos, entra a Ajustes del teléfono → Apps → Luisa → Batería y elige <b>“Sin restricciones”</b>.</p>
+      <button class="btn secondary block" data-act="test">${icons.bell} Probar una notificación</button>
+      <div class="tip">
+        ${icons.battery}
+        <span>Si no te llegan los avisos: Ajustes del teléfono → Apps → Luisa → Batería → <b>Sin restricciones</b>.</span>
+      </div>
     </div>
     <button class="fab" data-act="new" aria-label="Nuevo recordatorio">${icons.plus}</button>
   `;
@@ -94,10 +113,10 @@ export function renderReminders(view, ctx) {
     if (!el) return;
     const r = state.reminders.find((x) => String(x.id) === el.dataset.id);
     r.enabled = el.checked;
-    el.closest('.rem, .sunrise')?.classList.toggle('off', !r.enabled);
+    el.closest('.rem, .alarm')?.classList.toggle('off', !r.enabled);
     await saveReminders();
     await syncNotifications();
-    toast(r.enabled ? 'Recordatorio activado 🔔' : 'Recordatorio apagado');
+    toast(r.enabled ? 'Recordatorio activado' : 'Recordatorio apagado');
   };
 
   view.onclick = async (e) => {
@@ -111,8 +130,7 @@ export function renderReminders(view, ctx) {
       if (r) editReminder(r, () => renderReminders(view, ctx));
     } else if (act === 'perm') {
       const res = await requestPermission();
-      if (res === 'granted') toast('¡Listo! Te avisaré a tiempo 💗');
-      else toast('Activa las notificaciones en los ajustes del teléfono');
+      toast(res === 'granted' ? '¡Listo! Te avisaré a tiempo' : 'Activa las notificaciones en los ajustes del teléfono');
       refreshBanner(view);
     } else if (act === 'exact') {
       await openExactAlarmSettings();
@@ -120,20 +138,20 @@ export function renderReminders(view, ctx) {
       syncNotifications();
     } else if (act === 'test') {
       if (!isNative) {
-        toast('Las notificaciones funcionan en la app instalada 📱');
+        toast('Las notificaciones funcionan en la app instalada');
         return;
       }
       const st = await permissionStatus();
       if (st.display !== 'granted') {
         const res = await requestPermission();
         if (res !== 'granted') {
-          toast('Primero activa las notificaciones 🔔');
+          toast('Primero activa las notificaciones');
           refreshBanner(view);
           return;
         }
       }
       await sendTestNotification();
-      toast('En 5 segundos te llega una notificación 💌');
+      toast('En 5 segundos te llega una notificación');
     }
   };
 }
@@ -148,17 +166,19 @@ async function refreshBanner(view) {
     return;
   }
   if (st.display === 'web') {
-    box.innerHTML = `<div class="banner info">📱 Las notificaciones funcionan cuando la app está instalada en tu celular.</div>`;
+    box.innerHTML = `<div class="banner info">${iconTile('bell', 'gray', 'sm')}<span>Las notificaciones funcionan cuando la app está instalada en tu celular.</span></div>`;
   } else if (st.display !== 'granted') {
     box.innerHTML = `
       <div class="banner">
-        <span>🔔 Activa las notificaciones para que te recuerde escribirle a Luisa.</span>
+        ${iconTile('bell', 'sun', 'sm')}
+        <span>Activa las notificaciones para que te recuerde escribirle a Luisa.</span>
         <button class="btn small" data-act="perm">Activar</button>
       </div>`;
   } else if (st.exact !== 'granted') {
     box.innerHTML = `
       <div class="banner">
-        <span>⏰ Permite “alarmas exactas” para que el aviso de las 6:00 llegue puntual.</span>
+        ${iconTile('clock', 'sun', 'sm')}
+        <span>Permite “alarmas exactas” para que el aviso de las 6:00 llegue puntual.</span>
         <button class="btn small" data-act="exact">Permitir</button>
       </div>`;
   } else {
@@ -170,30 +190,41 @@ function editReminder(rem, onSaved) {
   const isNew = !rem;
   const r = rem
     ? { ...rem }
-    : { id: notifId(), kind: 'custom', title: '', body: '', time: '09:00', freq: 'daily', weekday: new Date().getDay() + 1, day: new Date().getDate(), date: todayISO(), enabled: true };
+    : {
+        id: notifId(),
+        kind: 'custom',
+        title: '',
+        body: '',
+        time: '09:00',
+        freq: 'daily',
+        weekday: new Date().getDay() + 1,
+        day: new Date().getDate(),
+        date: todayISO(),
+        enabled: true,
+      };
   r.weekday ||= new Date().getDay() + 1;
   r.day ||= new Date().getDate();
   r.date ||= todayISO();
   const lockedFreq = r.builtin && r.builtin !== 'morning';
 
   const sheet = openSheet({
-    title: isNew ? 'Nuevo recordatorio 🔔' : 'Editar recordatorio',
+    title: isNew ? 'Nuevo recordatorio' : 'Editar recordatorio',
     html: `
       ${
         isNew
           ? `<div class="chips scroll templates">${TEMPLATES.map(
-              (t, i) => `<button type="button" class="chip" data-tpl="${i}">${t.emoji} ${t.title.replace(' a Luisa', '').replace(' de Luisa', '')}</button>`,
+              (t, i) => `<button type="button" class="chip" data-tpl="${i}">${icons[t.icon]}${t.label}</button>`,
             ).join('')}</div>`
           : ''
       }
-      ${r.builtin && BUILTIN_NOTE[r.builtin] ? `<p class="hint">${BUILTIN_NOTE[r.builtin]}</p>` : ''}
+      ${r.builtin && BUILTIN_NOTE[r.builtin] ? `<p class="hint" style="margin:0 0 14px">${BUILTIN_NOTE[r.builtin]}</p>` : ''}
       <label class="field">
         <span>¿Qué te recuerdo?</span>
-        <input name="title" maxlength="80" placeholder="Ej: Escríbele a Luisa 💌" value="${esc(r.title)}" />
+        <input name="title" maxlength="80" placeholder="Ej: Escríbele a Luisa" value="${esc(r.title)}" />
       </label>
       <label class="field">
         <span>Mensaje de la notificación (opcional)</span>
-        <textarea name="body" rows="2" placeholder="Si lo dejas vacío, te sugiero un mensajito bonito 💕">${esc(r.body || '')}</textarea>
+        <textarea name="body" rows="2" placeholder="Si lo dejas vacío, te sugiero un mensaje bonito">${esc(r.body || '')}</textarea>
       </label>
       <label class="field">
         <span>Hora</span>
@@ -205,14 +236,14 @@ function editReminder(rem, onSaved) {
           : `
       <div class="field">
         <span>Repetir</span>
-        <div class="segmented">
+        <div class="seg">
           ${FREQS.map(([k, l]) => `<button type="button" class="${r.freq === k ? 'on' : ''}" data-freq="${k}">${l}</button>`).join('')}
         </div>
       </div>
-      <div class="field freq-extra" data-for="once yearly">
+      <label class="field freq-extra" data-for="once yearly">
         <span>Fecha</span>
         <input type="date" name="date" value="${r.date}" />
-      </div>
+      </label>
       <div class="field freq-extra" data-for="weekly">
         <span>Día de la semana</span>
         <div class="weekdays">
@@ -225,8 +256,8 @@ function editReminder(rem, onSaved) {
       </label>`
       }
       <div class="sheet-actions">
-        ${isNew || r.builtin ? '' : `<button class="btn soft danger-text" data-del>${icons.trash} Borrar</button>`}
-        <button class="btn grow" data-save>Guardar 🔔</button>
+        ${isNew || r.builtin ? '' : `<button class="btn danger-soft" data-del aria-label="Borrar">${icons.trash}</button>`}
+        <button class="btn grow" data-save>Guardar</button>
       </div>`,
   });
   const b = sheet.body;
@@ -255,8 +286,10 @@ function editReminder(rem, onSaved) {
   b.querySelectorAll('[data-tpl]').forEach((btn) =>
     btn.addEventListener('click', () => {
       const t = TEMPLATES[Number(btn.dataset.tpl)];
-      b.querySelector('[name=title]').value = `${t.emoji} ${t.title}`;
+      b.querySelector('[name=title]').value = t.title;
       r.kind = t.kind;
+      r.icon = t.icon;
+      r.tone = t.kind === 'sweet' ? 'pink' : 'lilac';
       b.querySelectorAll('[data-tpl]').forEach((x) => x.classList.toggle('on', x === btn));
     }),
   );
@@ -270,14 +303,14 @@ function editReminder(rem, onSaved) {
       r.day = Number(b.querySelector('[name=day]').value) || r.day;
     }
     if (!r.title) {
-      toast('Escribe qué te recuerdo 🐱');
+      toast('Escribe qué te recuerdo');
       return;
     }
     if (r.freq === 'once') {
       const [h, m] = r.time.split(':').map(Number);
       const [y, mo, d] = r.date.split('-').map(Number);
       if (new Date(y, mo - 1, d, h, m) <= new Date()) {
-        toast('Esa fecha y hora ya pasaron ⏳');
+        toast('Esa fecha y hora ya pasaron');
         return;
       }
     }
@@ -289,7 +322,7 @@ function editReminder(rem, onSaved) {
     const st = await permissionStatus().catch(() => ({ display: 'web' }));
     if (st.display === 'prompt' || st.display === 'prompt-with-rationale') await requestPermission();
     await syncNotifications();
-    toast(isNew ? 'Recordatorio creado 🔔' : 'Recordatorio guardado 🔔');
+    toast(isNew ? 'Recordatorio creado' : 'Recordatorio guardado');
     onSaved();
   });
 
