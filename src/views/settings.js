@@ -3,6 +3,7 @@ import { state, saveSettings } from '../state.js';
 import { esc, toast, confirmDialog } from '../ui.js';
 import { syncSpecialDates, permissionStatus, requestPermission, openExactAlarmSettings, isNative } from '../notify.js';
 import { exportBackup, importBackup } from '../media.js';
+import { addToCalendar } from '../calendar.js';
 
 export function renderSettings(view, ctx) {
   const s = state.settings;
@@ -39,7 +40,18 @@ export function renderSettings(view, ctx) {
         </label>
       </section>
 
-      <section class="card">
+      ${
+        isNative
+          ? ''
+          : `<section class="card">
+        <div class="settings-head">
+          ${iconTile('calendar', 'sun', 'md')}
+          <div><h3 class="card-h">Avisos en el Calendario</h3><p class="muted">En iPhone, los avisos (como el de las 6:00) suenan desde tu Calendario.</p></div>
+        </div>
+        <button class="btn small block" data-act="calendar">${icons.calendar} Agregar recordatorios al Calendario</button>
+      </section>`
+      }
+      <section class="card" ${isNative ? '' : 'hidden'}>
         <div class="settings-head">
           ${iconTile('bell', 'sun', 'md')}
           <div><h3 class="card-h">Notificaciones</h3><p class="muted">Necesarias para el aviso diario de las 6:00.</p></div>
@@ -128,6 +140,10 @@ export function renderSettings(view, ctx) {
     if (!el) return;
     const act = el.dataset.act;
     if (act === 'back') ctx.back();
+    else if (act === 'calendar') {
+      const n = await addToCalendar(state.reminders.filter((r) => r.enabled));
+      toast(n ? 'Toca “Agregar todo” en tu Calendario' : 'No hay recordatorios activos');
+    }
     else if (act === 'perm') {
       if (!isNative) return toast('Disponible en la app instalada');
       await requestPermission();

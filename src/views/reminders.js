@@ -10,6 +10,7 @@ import {
   syncNotifications,
   sendTestNotification,
 } from '../notify.js';
+import { addToCalendar } from '../calendar.js';
 
 const FREQS = [
   ['once', 'Una vez'],
@@ -97,11 +98,19 @@ export function renderReminders(view, ctx) {
           : '<p class="muted center">Toca el botón + para crear uno nuevo.</p>'
       }
 
-      <button class="btn secondary block" data-act="test">${icons.bell} Probar una notificación</button>
+      ${
+        isNative
+          ? `<button class="btn secondary block" data-act="test">${icons.bell} Probar una notificación</button>
       <div class="tip">
         ${icons.battery}
         <span>Si no te llegan los avisos: Ajustes del teléfono → Apps → Luisa → Batería → <b>Sin restricciones</b>.</span>
-      </div>
+      </div>`
+          : `<button class="btn secondary block" data-act="calendar">${icons.calendar} Agregar recordatorios al Calendario</button>
+      <div class="tip">
+        ${icons.calendar}
+        <span>El Calendario de tu celular hace sonar cada aviso a su hora, aunque la app esté cerrada. Si cambias una hora, vuelve a agregarlo.</span>
+      </div>`
+      }
     </div>
     <button class="fab" data-act="new" aria-label="Nuevo recordatorio">${icons.plus}</button>
   `;
@@ -128,6 +137,9 @@ export function renderReminders(view, ctx) {
     else if (act === 'edit') {
       const r = state.reminders.find((x) => String(x.id) === el.dataset.id);
       if (r) editReminder(r, () => renderReminders(view, ctx));
+    } else if (act === 'calendar') {
+      const n = await addToCalendar(state.reminders.filter((r) => r.enabled));
+      toast(n ? 'Toca “Agregar todo” en tu Calendario' : 'No hay recordatorios activos');
     } else if (act === 'perm') {
       const res = await requestPermission();
       toast(res === 'granted' ? '¡Listo! Te avisaré a tiempo' : 'Activa las notificaciones en los ajustes del teléfono');
@@ -166,7 +178,12 @@ async function refreshBanner(view) {
     return;
   }
   if (st.display === 'web') {
-    box.innerHTML = `<div class="banner info">${iconTile('bell', 'gray', 'sm')}<span>Las notificaciones funcionan cuando la app está instalada en tu celular.</span></div>`;
+    box.innerHTML = `
+      <div class="banner">
+        ${iconTile('calendar', 'sun', 'sm')}
+        <span>Para que te suenen los avisos, agrégalos al Calendario de tu celular.</span>
+        <button class="btn small" data-act="calendar">Agregar</button>
+      </div>`;
   } else if (st.display !== 'granted') {
     box.innerHTML = `
       <div class="banner">
@@ -257,7 +274,7 @@ function editReminder(rem, onSaved) {
       }
       <div class="sheet-actions">
         ${isNew || r.builtin ? '' : `<button class="btn danger-soft" data-del aria-label="Borrar">${icons.trash}</button>`}
-        <button class="btn grow" data-save>Guardar</button>
+        <button class="btn grow" data-save>${isNative ? 'Guardar' : 'Guardar y agregar al Calendario'}</button>
       </div>`,
   });
   const b = sheet.body;
@@ -322,7 +339,12 @@ function editReminder(rem, onSaved) {
     const st = await permissionStatus().catch(() => ({ display: 'web' }));
     if (st.display === 'prompt' || st.display === 'prompt-with-rationale') await requestPermission();
     await syncNotifications();
-    toast(isNew ? 'Recordatorio creado' : 'Recordatorio guardado');
+    if (!isNative && r.enabled) {
+      await addToCalendar([r], 'luisa-recordatorio');
+      toast('Toca “Agregar” en tu Calendario');
+    } else {
+      toast(isNew ? 'Recordatorio creado' : 'Recordatorio guardado');
+    }
     onSaved();
   });
 

@@ -15,6 +15,8 @@ import { renderNotes } from './views/notes.js';
 import { renderReminders } from './views/reminders.js';
 import { renderPhotos } from './views/photos.js';
 import { renderSettings } from './views/settings.js';
+import { setupPWA, isNativeApp, isIOS, isStandalone } from './pwa.js';
+import { addToCalendar } from './calendar.js';
 
 const TABS = [
   { id: 'home', label: 'Inicio', icon: icons.home, render: renderHome },
@@ -73,6 +75,7 @@ tabbar.addEventListener('click', (e) => {
 });
 
 function showWelcome() {
+  if (!isNativeApp) return showWebWelcome();
   const sheet = openSheet({
     title: 'Bienvenido',
     cls: 'welcome',
@@ -100,7 +103,46 @@ function showWelcome() {
   });
 }
 
+function showWebWelcome() {
+  const needsInstall = !isStandalone();
+  const sheet = openSheet({
+    title: 'Bienvenido',
+    cls: 'welcome',
+    html: `
+      <div class="welcome-art">${mascotHTML({ size: 120 })}</div>
+      <p class="welcome-text">Tu app para cuidar y consentir a <span class="script">Luisa</span></p>
+      <ul class="welcome-list">
+        ${
+          needsInstall
+            ? `<li>${iconTile('home', 'pink', 'sm')}<span>${
+                isIOS
+                  ? 'Instálala: toca <b>Compartir</b> en Safari y luego <b>“Agregar a inicio”</b>.'
+                  : 'Instálala desde el menú del navegador: <b>“Instalar app”</b> o <b>“Agregar a la pantalla principal”</b>.'
+              }</span></li>`
+            : ''
+        }
+        <li>${iconTile('calendar', 'sun', 'sm')}<span>Agrega los avisos a tu <b>Calendario</b> y te sonará todos los días a las <b>6:00 a. m.</b></span></li>
+        <li>${iconTile('notes', 'lilac', 'sm')}<span>Guarda lo que le gusta, ideas de regalo y datos importantes.</span></li>
+        <li>${iconTile('camera', 'sky', 'sm')}<span>Guarda las fotos de sus momentos más lindos.</span></li>
+      </ul>
+      <button class="btn block" data-cal>${icons.calendar} Agregar avisos a mi Calendario</button>
+      <button class="btn ghost block" data-later style="margin-top:6px">Más tarde</button>`,
+    onClose: async () => {
+      state.settings.welcomed = true;
+      await saveSettings();
+    },
+  });
+  sheet.body.querySelector('[data-cal]').addEventListener('click', async () => {
+    const n = await addToCalendar(state.reminders.filter((r) => r.enabled));
+    state.settings.calendarAdded = true;
+    sheet.close();
+    if (n) toast('Toca “Agregar todo” en tu Calendario');
+  });
+  sheet.body.querySelector('[data-later]').addEventListener('click', () => sheet.close());
+}
+
 async function start() {
+  setupPWA();
   try {
     await loadState();
   } catch (e) {

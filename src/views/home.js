@@ -6,6 +6,28 @@ import { esc, toast, heartBurst } from '../ui.js';
 import { copyText, openWhatsApp, shareText, photoURL } from '../media.js';
 import { CATS } from './notes.js';
 import { reminderIcon } from './reminders.js';
+import { isNativeApp, isIOS, isStandalone, canPromptInstall, promptInstall, onInstallAvailable } from '../pwa.js';
+
+function installCard() {
+  if (isNativeApp || isStandalone() || state.settings.hideInstall) return '';
+  const action = isIOS
+    ? `<p class="install-steps">En Safari toca <b>Compartir</b> ${icons.share} y luego <b>“Agregar a inicio”</b>.</p>`
+    : canPromptInstall()
+      ? `<button class="btn block" data-act="install">${icons.download} Instalar app</button>`
+      : `<p class="install-steps">Abre el menú del navegador y elige <b>“Instalar app”</b> o <b>“Agregar a la pantalla principal”</b>.</p>`;
+  return `
+    <section class="card install">
+      <div class="gm">
+        ${iconTile('home', 'lilac', 'lg')}
+        <div class="gm-text">
+          <h3>Ponla en tu pantalla de inicio</h3>
+          <p>Se abre como una app, a pantalla completa y sin internet.</p>
+        </div>
+        <button class="icon-btn plain" data-act="hide-install" aria-label="Ocultar">${icons.close}</button>
+      </div>
+      <div class="gm-actions">${action}</div>
+    </section>`;
+}
 
 let msgKind = null;
 let msgText = '';
@@ -108,6 +130,8 @@ export function renderHome(view, ctx) {
       </div>
     </section>
 
+    ${installCard()}
+
     <section class="card">
       <div class="gm">
         ${iconTile(doneToday ? 'check' : 'sun', doneToday ? 'mint' : 'sun', 'lg')}
@@ -192,6 +216,13 @@ export function renderHome(view, ctx) {
     <p class="footer-love">Hecha con amor para Luisa</p>
   `;
 
+  if (!isNativeApp && !canPromptInstall()) {
+    const off = onInstallAvailable(() => {
+      off();
+      if (view.querySelector('.install')) renderHome(view, ctx);
+    });
+  }
+
   view.onclick = async (e) => {
     const el = e.target.closest('[data-act]');
     if (!el) return;
@@ -221,6 +252,13 @@ export function renderHome(view, ctx) {
       const r = el.getBoundingClientRect();
       heartBurst(r.left + r.width / 2, r.top + r.height / 2);
       toast('¡Eres un amor!');
+      renderHome(view, ctx);
+    } else if (act === 'install') {
+      if (await promptInstall()) toast('¡App instalada!');
+      renderHome(view, ctx);
+    } else if (act === 'hide-install') {
+      state.settings.hideInstall = true;
+      await saveSettings();
       renderHome(view, ctx);
     } else if (act === 'gm-undo') {
       state.settings.gmLog = (state.settings.gmLog || []).filter((d) => d !== today);

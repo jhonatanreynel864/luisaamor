@@ -1900,3 +1900,36 @@ svg {
     margin: 0 auto;
   }
 }
+
+/* ------------------------------------------------------------ Instalar (web) */
+
+.install {
+  background: linear-gradient(160deg, #ffffff 0%, #f6f0ff 100%);
+}
+
+.install .gm .icon-btn {
+  align-self: flex-start;
+  margin: -6px -8px 0 0;
+}
+
+.install-steps {
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  background: #fff;
+  border: 1px solid #eadfff;
+  color: var(--ink);
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.install-steps svg {
+  width: 17px;
+  height: 17px;
+  vertical-align: -3px;
+  color: #3a8ee6;
+}
+
+section[hidden] {
+  display: none;
+}

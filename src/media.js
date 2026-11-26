@@ -193,7 +193,13 @@ export async function exportBackup(onProgress) {
     onProgress?.(i + 1, photos.length);
   }
   parts.push(']}');
-  downloadBlob(new Blob(parts, { type: 'application/json' }), name);
+  const blob = new Blob(parts, { type: 'application/json' });
+  const file = new File([blob], name, { type: 'application/json' });
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ files: [file], title: name });
+    return;
+  }
+  downloadBlob(blob, name);
 }
 
 export async function importBackup(file, onProgress) {

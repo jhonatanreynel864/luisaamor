@@ -1,6 +1,6 @@
 # Luisa 💗
 
-App de Android para guardar todo sobre Luisa: notas, recordatorios, fotos de momentos lindos
+App (web para iPhone y Android, y APK para Android) para guardar todo sobre Luisa: notas, recordatorios, fotos de momentos lindos
 y un aviso **todos los días a las 6:00 a. m.** para darle los buenos días.
 
 ## Qué tiene
@@ -17,7 +17,18 @@ y un aviso **todos los días a las 6:00 a. m.** para darle los buenos días.
 
 Todo se guarda solo en el celular; no necesita internet ni cuenta.
 
-## Cómo instalarla en el celular
+## Cómo instalarla en iPhone (o cualquier celular, como página web)
+
+1. Abre en **Safari**: https://jhonatanreynel864.github.io/luisaamor/
+2. Toca **Compartir** (el cuadrito con la flecha) y luego **"Agregar a inicio"**.
+3. Abre "Luisa" desde la pantalla de inicio: funciona a pantalla completa y sin internet.
+4. Toca **"Agregar avisos a mi Calendario"** → **"Agregar todo"**. El Calendario del iPhone hará sonar
+   el aviso de las **6:00 a. m.** y los demás, aunque la app esté cerrada.
+   (Apple no deja que las páginas web programen notificaciones por sí solas; el Calendario sí.)
+
+Tus notas y fotos se guardan en el iPhone, dentro de la app.
+
+## Cómo instalarla en Android (APK)
 
 1. En el celular, entra a la pestaña **Releases** de este repositorio en GitHub
    (o a **Actions → la compilación más reciente → Artifacts**).
