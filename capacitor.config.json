@@ -1,0 +1,19 @@
+{
+  "appId": "com.luisaamor.app",
+  "appName": "Luisa",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#FFE9F2"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_kitty",
+      "iconColor": "#FF4F96"
+    },
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "LIGHT",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}

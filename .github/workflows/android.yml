@@ -1,0 +1,66 @@
+name: Construir APK de Luisa
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Construir la app web
+        run: npm run build
+
+      - name: Copiar a Android
+        run: npx cap sync android
+
+      - name: Compilar APK
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Preparar archivo
+        run: cp android/app/build/outputs/apk/release/app-release.apk Luisa.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Luisa-apk
+          path: Luisa.apk
+
+      - name: Publicar para descargar desde el celular
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: luisa-v1.0.${{ github.run_number }}
+          name: Luisa 💗 v1.0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          files: Luisa.apk
+          body: |
+            📱 Descarga **Luisa.apk** desde el celular (Android) y ábrelo para instalar.
+            Si el celular pregunta, permite "Instalar apps desconocidas" para tu navegador o el administrador de archivos.
+            Para actualizar, instala el nuevo APK encima del anterior: tus notas y fotos se conservan.
